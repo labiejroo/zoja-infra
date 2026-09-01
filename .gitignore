@@ -1,0 +1,17 @@
+# stan Terraforma — może zawierać dane wrażliwe, NIGDY do repozytorium
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl.bak
+crash.log
+crash.*.log
+
+# zmienne z prawdziwymi wartościami
+*.tfvars
+*.tfvars.json
+!example.tfvars
+
+# wygenerowana konfiguracja z -generate-config-out
+generated*.tf
+
+.DS_Store
