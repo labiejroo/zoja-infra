@@ -19,22 +19,28 @@ resource "aws_db_instance" "postgres" {
   username = var.rds_username
   # password — celowo nieobecne, patrz blok lifecycle.
 
-  allocated_storage = 20
-  storage_type      = "gp3"
-  storage_encrypted = true
+  allocated_storage     = 20
+  max_allocated_storage = 1000
+  storage_type          = "gp2"
+  storage_encrypted     = true
   # Klucz zarządzany przez AWS (aws/rds). TODO: po imporcie sprawdź, czy plan
   # nie chce zmienić kms_key_id — jeśli tak, wpisz tu ARN klucza z konsoli.
 
   publicly_accessible = false
+  multi_az            = false
   port                = 5432
 
   vpc_security_group_ids = [aws_security_group.rds.id]
 
-  # TODO: nazwa domyślnej grupy podsieci — zwykle "default". Sprawdź w konsoli.
-  db_subnet_group_name = "default"
+  db_subnet_group_name = "default-vpc-0de2ad6ec8de9076c"
 
-  backup_retention_period = 1
-  deletion_protection     = false
+  backup_retention_period    = 1
+  copy_tags_to_snapshot      = true
+  deletion_protection        = false
+  auto_minor_version_upgrade = true
+
+  performance_insights_enabled = true
+  monitoring_interval          = 0
 
   # ATRYBUTY, KTORYCH AWS NIE ZWRACA
   # Poniższe pola istnieją wyłącznie po stronie Terraforma i po imporcie będą

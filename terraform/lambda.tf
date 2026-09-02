@@ -12,10 +12,6 @@
 resource "aws_cloudwatch_log_group" "api" {
   name = local.api_log_group_name
 
-  # TODO: po imporcie sprawdź faktyczną retencję. Wartość "Never expire"
-  # w konsoli odpowiada zeru i Terraform pokaże wtedy dryf względem liczby niżej.
-  retention_in_days = 14
-
   lifecycle {
     prevent_destroy = true
   }
@@ -26,20 +22,25 @@ resource "aws_lambda_function" "api" {
   role          = aws_iam_role.lambda_exec.arn
 
   runtime = var.lambda_runtime
-  handler = "dist/lambda.handler"
+  handler = "index.handler"
 
   # Terraform wymaga wskazania źródła kodu, nawet gdy go nie zarządza.
   # Ten plik jest używany WYŁĄCZNIE gdyby funkcja powstawała od zera.
   # Przy imporcie istniejącej funkcji nie zostanie użyty ani razu.
   filename = "${path.module}/placeholder/placeholder.zip"
 
-  # TODO: dopasuj do wartości z konsoli — inaczej pierwszy plan pokaże dryf.
-  memory_size = 512
-  timeout     = 30
+  memory_size = 128
+  timeout     = 3
 
   vpc_config {
-    subnet_ids         = data.aws_subnets.default.ids
-    security_group_ids = [aws_security_group.lambda.id]
+    subnet_ids = [
+      "subnet-073cce418a6ab9fe4",
+      "subnet-04099219aa563a772",
+    ]
+
+    security_group_ids = [
+      aws_security_group.lambda.id
+    ]
   }
 
   environment {
@@ -81,10 +82,11 @@ resource "aws_lambda_function" "api" {
 }
 
 resource "aws_lambda_permission" "api_gateway" {
-  # TODO: sprawdź faktyczny statement id przez aws lambda get-policy.
-  statement_id  = "AllowExecutionFromAPIGateway"
+  statement_id = "735f054c-6167-504a-871d-5ca42c09842c"
+
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api.function_name
   principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
+
+  source_arn = "${aws_apigatewayv2_api.http.execution_arn}/*/*/api/hello"
 }

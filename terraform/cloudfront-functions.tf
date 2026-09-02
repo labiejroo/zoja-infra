@@ -18,8 +18,9 @@
 
 resource "aws_cloudfront_function" "static_routing" {
   name    = var.cloudfront_function_name
-  runtime = "cloudfront-js-2.0" # TODO: sprawdź runtime w konsoli (może być 1.0).
-  comment = "Mapowanie tras statycznych na pliki .html"
+  runtime = "cloudfront-js-2.0"
+  comment = ""
   publish = true
-  code    = file("${path.module}/functions/static-routing.js")
+
+  code = file("${path.module}/functions/static-routing.js")
 }

@@ -13,16 +13,16 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_cloudfront_origin_access_control" "s3" {
-  name                              = "${local.name_prefix}-s3-oac" # TODO: nazwa z konsoli.
-  description                       = "Dostep CloudFront do prywatnego bucketa frontendu"
+  name                              = "oac-zoja-aws-lab-frontend-631245465107-eu-central-1--mtfxvk1dg23"
+  description                       = "Created by CloudFront"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
   signing_protocol                  = "sigv4"
 }
 
 resource "aws_cloudfront_response_headers_policy" "csp" {
-  name    = "${local.name_prefix}-security-headers" # TODO: nazwa z konsoli.
-  comment = "CSP i naglowki bezpieczenstwa dla frontendu"
+  name    = "ZojamyResponsePolicy"
+  comment = ""
 
   security_headers_config {
     # To JEDYNE miejsce, w którym frame-ancestors istnieje na produkcji.
@@ -33,21 +33,6 @@ resource "aws_cloudfront_response_headers_policy" "csp" {
       override                = true
     }
 
-    content_type_options {
-      override = true
-    }
-
-    referrer_policy {
-      referrer_policy = "strict-origin-when-cross-origin"
-      override        = true
-    }
-
-    strict_transport_security {
-      access_control_max_age_sec = 31536000
-      include_subdomains         = true
-      override                   = true
-    }
-
     # X-Frame-Options CELOWO pominięte: zna tylko DENY i SAMEORIGIN, więc
     # kolidowałoby z osadzeniem na stronie nadrzędnej. Rolę pełni frame-ancestors.
   }
@@ -56,37 +41,51 @@ resource "aws_cloudfront_response_headers_policy" "csp" {
 resource "aws_cloudfront_distribution" "main" {
   enabled             = true
   is_ipv6_enabled     = true
-  default_root_object = "index.html"
-  comment             = "Zoja — frontend i API" # TODO: dopasuj do konsoli.
+  default_root_object = ""
+  comment             = ""
 
   # --- ORIGIN 1: S3 z frontendem, przez OAC ---
   origin {
-    origin_id                = "s3-frontend"
+    origin_id                = "zoja-aws-lab-frontend-631245465107-eu-central-1-an.s3.eu-central-1.amazonaws.com-mtfxh29vx1g"
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_access_control_id = aws_cloudfront_origin_access_control.s3.id
+
+    response_completion_timeout = 0
   }
 
   # --- ORIGIN 2: API Gateway ---
   origin {
-    origin_id = "api-gateway"
+    origin_id = "zoja-api-gateway-origin"
     # Host bez schematu i bez ścieżki — sam human-readable endpoint HTTP API.
     domain_name = replace(aws_apigatewayv2_api.http.api_endpoint, "https://", "")
+
+    response_completion_timeout = 0
 
     custom_origin_config {
       http_port              = 80
       https_port             = 443
       origin_protocol_policy = "https-only"
       origin_ssl_protocols   = ["TLSv1.2"]
+      ip_address_type        = "ipv4"
     }
   }
 
   # --- DEFAULT: wszystko inne idzie do S3 ---
   default_cache_behavior {
-    target_origin_id       = "s3-frontend"
+    target_origin_id       = "zoja-aws-lab-frontend-631245465107-eu-central-1-an.s3.eu-central-1.amazonaws.com-mtfxh29vx1g"
     viewer_protocol_policy = "redirect-to-https"
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    compress               = true
+
+    allowed_methods = [
+      "GET",
+      "HEAD",
+    ]
+
+    cached_methods = [
+      "GET",
+      "HEAD",
+    ]
+
+    compress = true
 
     # Managed-CachingOptimized
     cache_policy_id            = "658327ea-f89d-4fab-a63d-7e88639e58f6"
@@ -101,8 +100,8 @@ resource "aws_cloudfront_distribution" "main" {
   # --- /api/*: do API Gateway, bez cache ---
   ordered_cache_behavior {
     path_pattern           = "/api/*"
-    target_origin_id       = "api-gateway"
-    viewer_protocol_policy = "https-only"
+    target_origin_id       = "zoja-api-gateway-origin"
+    viewer_protocol_policy = "redirect-to-https"
 
     # Backend musi móc przyjąć każdą metodę, nie tylko GET.
     allowed_methods = ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
@@ -131,6 +130,10 @@ resource "aws_cloudfront_distribution" "main" {
     # Domyślny certyfikat *.cloudfront.net — bez własnej domeny nic nie płacimy.
     # Po dodaniu domeny: acm_certificate_arn (z us-east-1) + aliases + SNI.
     cloudfront_default_certificate = true
+  }
+
+  tags = {
+    Name = "zojaDistributonCloudFront"
   }
 
   lifecycle {

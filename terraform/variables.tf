@@ -25,27 +25,27 @@ variable "environment" {
 # ---------------------------------------------------------------------------
 
 variable "api_lambda_function_name" {
-  description = "Nazwa istniejącej Lambdy obsługującej API. TODO: uzupełnij."
+  description = "Nazwa istniejącej Lambdy obsługującej API."
   type        = string
-  default     = "TODO_LAMBDA_FUNCTION_NAME"
+  default     = "zoja-hello-api-lambda-central"
 }
 
 variable "lambda_execution_role_name" {
-  description = "Nazwa istniejącej roli wykonawczej Lambdy. TODO: uzupełnij."
+  description = "Nazwa istniejącej roli wykonawczej Lambdy."
   type        = string
-  default     = "TODO_LAMBDA_ROLE_NAME"
+  default     = "zoja-hello-api-lambda-central-role-fz8vv09h"
 }
 
 variable "frontend_bucket_name" {
-  description = "Nazwa bucketa S3 z frontendem. TODO: uzupełnij."
+  description = "Nazwa bucketa S3 z frontendem."
   type        = string
-  default     = "TODO_FRONTEND_BUCKET_NAME"
+  default     = "zoja-aws-lab-frontend-631245465107-eu-central-1-an"
 }
 
 variable "cloudfront_function_name" {
-  description = "Nazwa CloudFront Function routującej trasy statyczne. TODO: uzupełnij."
+  description = "Nazwa CloudFront Function routującej trasy statyczne."
   type        = string
-  default     = "TODO_CLOUDFRONT_FUNCTION_NAME"
+  default     = "zoja-static-routing"
 }
 
 variable "rds_identifier" {
@@ -57,30 +57,30 @@ variable "rds_identifier" {
 variable "rds_database_name" {
   description = "Nazwa początkowej bazy w RDS."
   type        = string
-  default     = "zoja"
+  default     = "zojaDB"
 }
 
 variable "rds_username" {
-  description = "Master username RDS. TODO: uzupełnij zgodnie z tym, co ustawiono ręcznie."
+  description = "Master username RDS."
   type        = string
-  default     = "TODO_RDS_MASTER_USERNAME"
+  default     = "postgres"
 }
 
 variable "rds_instance_class" {
-  description = "Klasa instancji RDS. TODO: sprawdź w konsoli i dopasuj."
+  description = "Klasa instancji RDS."
   type        = string
   default     = "db.t4g.micro"
 }
 
 variable "rds_engine_version" {
   description = <<-EOT
-    Wersja PostgreSQL. TODO: wpisz DOKŁADNIE tę z konsoli.
+    Wersja PostgreSQL — odczytana z konsoli.
     Przy włączonym auto minor upgrade wersja potrafi się zmienić sama, co przy
     zbyt szczegółowej wartości daje wieczny dryf w planie. Rozważ podanie samej
     wersji major (np. "16") i pozostawienie reszty AWS-owi.
   EOT
   type        = string
-  default     = "TODO_RDS_ENGINE_VERSION"
+  default     = "18.3"
 }
 
 variable "lambda_runtime" {
@@ -92,8 +92,8 @@ variable "lambda_runtime" {
 variable "parent_site_origin" {
   description = <<-EOT
     Origin strony nadrzędnej osadzającej aplikację w iframe — trafia do
-    frame-ancestors w Response Headers Policy. TODO: uzupełnij adresem Netlify.
+    frame-ancestors w Response Headers Policy.
   EOT
   type        = string
-  default     = "https://TODO.netlify.app"
+  default     = "https://przywitajzoje.netlify.app"
 }

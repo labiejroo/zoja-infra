@@ -54,22 +54,35 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "frontend" {
 # Warunek AWS:SourceArn jest tu istotny: bez niego każda dystrybucja
 # w dowolnym koncie AWS mogłaby czytać bucket przez OAC.
 data "aws_iam_policy_document" "frontend_bucket" {
+  policy_id = "PolicyForCloudFrontPrivateContent"
+  version   = "2008-10-17"
+
   statement {
-    sid    = "AllowCloudFrontServicePrincipalReadOnly"
+    sid    = "AllowCloudFrontServicePrincipal"
     effect = "Allow"
 
+    actions = [
+      "s3:GetObject",
+    ]
+
+    resources = [
+      "${aws_s3_bucket.frontend.arn}/*",
+    ]
+
     principals {
-      type        = "Service"
-      identifiers = ["cloudfront.amazonaws.com"]
+      type = "Service"
+      identifiers = [
+        "cloudfront.amazonaws.com",
+      ]
     }
 
-    actions   = ["s3:GetObject"]
-    resources = ["${aws_s3_bucket.frontend.arn}/*"]
-
     condition {
-      test     = "StringEquals"
+      test     = "ArnLike"
       variable = "AWS:SourceArn"
-      values   = [aws_cloudfront_distribution.main.arn]
+
+      values = [
+        aws_cloudfront_distribution.main.arn,
+      ]
     }
   }
 }

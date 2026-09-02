@@ -10,7 +10,7 @@
 # ---------------------------------------------------------------------------
 
 resource "aws_apigatewayv2_api" "http" {
-  name          = "${var.project}-http-api" # TODO: wpisz nazwę z konsoli.
+  name          = "zoja-gateway-central"
   protocol_type = "HTTP"
 
   # CORS celowo nieustawiony: przeglądarka woła /api/* na tym samym originie
@@ -22,7 +22,7 @@ resource "aws_apigatewayv2_integration" "lambda" {
   api_id = aws_apigatewayv2_api.http.id
 
   integration_type       = "AWS_PROXY"
-  integration_uri        = aws_lambda_function.api.invoke_arn
+  integration_uri        = aws_lambda_function.api.arn
   integration_method     = "POST"
   payload_format_version = "2.0"
 }
