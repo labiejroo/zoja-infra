@@ -15,3 +15,4 @@ crash.*.log
 generated*.tf
 
 .DS_Store
+/terraform/tfplan
