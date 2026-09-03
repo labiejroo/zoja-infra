@@ -56,7 +56,7 @@ przygotowany **do importu**, nie do utworzenia.
 - bucket S3 z frontendem (plus cztery zasoby poboczne: polityka, blokada
   dostępu publicznego, szyfrowanie, własność obiektów)
 - dystrybucja CloudFront, OAC, Response Headers Policy, CloudFront Function
-- HTTP API, integracja z Lambdą, trasa `GET /api/hello`, stage `$default`
+- HTTP API, integracja z Lambdą, trasa `ANY /api/{proxy+}`, stage `$default`
 - Lambda API, jej rola wykonawcza, dwa attachmenty polityk, log group
 - RDS `zoja-postgres`
 - grupy `zoja-lambda-sg` i `zoja-rds-sg` wraz z regułami
@@ -110,8 +110,9 @@ uwierzytelnienia i jest opisane w [`IMPORT_PLAN.md`](./IMPORT_PLAN.md).
 Poświadczenia: **AWS CLI z SSO**, nie stałe klucze dostępu.
 
 ```bash
-aws sso login --profile zoja
-export AWS_PROFILE=zoja      # PowerShell: $env:AWS_PROFILE = "zoja"
+aws sso login --profile AdministratorAccess-631245465107
+export AWS_PROFILE=AdministratorAccess-631245465107
+# PowerShell: $env:AWS_PROFILE = "AdministratorAccess-631245465107"
 ```
 
 ## Podział odpowiedzialności
@@ -122,7 +123,7 @@ Ta granica jest celowa i warto jej pilnować.
 | --- | --- | --- |
 | Bucket S3 | tworzy i konfiguruje | — |
 | Pliki frontendu w buckecie | **nie dotyka** | `aws s3 sync` + invalidacja |
-| Funkcja Lambda | konfiguracja: rola, sieć, pamięć, timeout | — |
+| Funkcja Lambda | konfiguracja: rola, sieć, pamięć, timeout, zmienne środowiskowe **poza `DB_PASSWORD`** | — |
 | Kod Lambdy | **nie dotyka** | `aws lambda update-function-code` |
 | API Gateway, RDS, IAM, CloudFront | tworzy i konfiguruje | — |
 
@@ -135,8 +136,21 @@ backendu pokazywałby dryf w planie.
 `DB_PASSWORD` **nie występuje w tym repozytorium** i nie ma go tu być.
 
 Na czas laba jest ustawiane ręcznie jako zmienna środowiskowa Lambdy w konsoli.
-W `lambda.tf` cały blok `environment` jest w `ignore_changes` — inaczej każdy
-plan chciałby usunąć hasło ustawione ręcznie.
+W `lambda.tf` w `ignore_changes` jest **tylko ten jeden klucz**:
+
+```hcl
+environment[0].variables["DB_PASSWORD"]
+```
+
+Pozostałe zmienne — `NODE_ENV`, `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`,
+`DB_SSL` — zarządza Terraform. Wcześniej ignorowany był cały blok `environment`
+i przez to `DB_SSL` trzeba było dokładać ręcznie w konsoli.
+
+Dlaczego to bezpieczne, mimo że `UpdateFunctionConfiguration` nadpisuje mapę
+`Variables` w całości: `ignore_changes` nie znaczy „nie wysyłaj tego pola", tylko
+„weź dla tej ścieżki wartość ze stanu". Terraform wysyła więc pełną mapę razem
+z hasłem odczytanym przy refreshu. Skutek uboczny wart zapamiętania — rotacja
+hasła zrobiona w konsoli nie zostanie cofnięta przez następny apply.
 
 Master password RDS też nie jest zarządzane: AWS nigdy nie zwraca go przez API,
 więc import go nie wypełni. Atrybut `password` jest pominięty w konfiguracji
@@ -195,9 +209,10 @@ ktoś świadomie nie zdejmie flagi.
 ## TODO
 
 - [ ] Uzupełnić placeholdery w `variables.tf` (każdy ma komentarz `TODO`).
-- [ ] Przeprowadzić import etapami według `IMPORT_PLAN.md`.
-- [ ] Dojść do `plan` bez zmian.
-- [ ] Odkomentować trasy catch-all w `api-gateway.tf` i usunąć `GET /api/hello`.
+- [x] Przeprowadzić import etapami według `IMPORT_PLAN.md`.
+- [x] Dojść do `plan` bez zmian.
+- [x] Trasa catch-all `ANY /api/{proxy+}` (dawne `GET /api/hello`).
+- [ ] Dodać trasę `ANY /api` (`api_root`), gdy będzie potrzebna.
 - [ ] Ustalić i włączyć `reserved_concurrent_executions` na Lambdzie API.
 - [ ] Utworzyć `zoja-db-migrations-lambda`.
 - [ ] Przenieść stan do S3 (`backend.tf` ma gotową instrukcję).

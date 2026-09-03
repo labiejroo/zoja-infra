@@ -74,9 +74,9 @@ resource "aws_lambda_function" "api" {
       s3_bucket,
       s3_key,
       s3_object_version,
-      # DB_PASSWORD ustawiane ręcznie poza Terraformem. Bez tego każdy plan
-      # chciałby usunąć je ze zmiennych środowiskowych funkcji.
-      environment,
+
+      # Tymczasowo tylko sekret pozostaje zarządzany poza Terraformem.
+      environment[0].variables["DB_PASSWORD"],
     ]
   }
 }
