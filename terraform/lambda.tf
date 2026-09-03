@@ -51,10 +51,24 @@ resource "aws_lambda_function" "api" {
       DB_NAME  = var.rds_database_name
       DB_USER  = var.rds_username
       DB_SSL   = "true"
-      # DB_PASSWORD CELOWO NIE JEST TUTAJ.
-      # Ustawiane ręcznie w konsoli Lambdy jako świadome uproszczenie na czas
-      # laba. Wpisanie go tutaj umieściłoby hasło w pliku stanu Terraforma.
-      # Patrz README, sekcja o sekretach.
+
+      # Wskazuje, SKĄD wziąć hasło. Nazwa sekretu sekretem nie jest, więc
+      # Terraform może nią spokojnie zarządzać. Backend sięga po tę zmienną
+      # DOPIERO gdy DB_PASSWORD nie istnieje — patrz ensureDatabasePassword()
+      # — więc dopóki hasło zostaje w env, produkcja działa jak dotąd.
+      #
+      # CELOWO nazwa, a NIE aws_secretsmanager_secret.database.arn.
+      # ARN ma losowy sufiks, więc jest nieznany przed utworzeniem sekretu.
+      # Jedna nieznana wartość sprawia, że provider oznacza CAŁĄ mapę jako
+      # (known after apply), a wtedy plan przestaje dowodzić, że DB_PASSWORD
+      # przetrwa. Znany literał utrzymuje mapę policzalną na etapie planu.
+      DB_SECRET_ID = local.database_secret_name
+
+      # DB_PASSWORD CELOWO NIE JEST TUTAJ — i nie ma go już także w samej
+      # Lambdzie. Hasło pobiera backend przy starcie z Secrets Managera,
+      # wskazanego przez DB_SECRET_ID, i trzyma je wyłącznie w pamięci
+      # procesu. Wpisanie go tutaj umieściłoby je w pliku stanu Terraforma,
+      # czyli dokładnie tam, skąd je wyprowadziliśmy.
     }
   }
 
@@ -66,6 +80,11 @@ resource "aws_lambda_function" "api" {
   # TODO: ustal wartość i odkomentuj. Wymaga apply, więc świadoma decyzja.
   # reserved_concurrent_executions = 10
 
+  # Nazwa sekretu jest literałem, więc Terraform nie wywnioskuje tej
+  # zależności sam. Deklarujemy ją jawnie: sekret ma istnieć, zanim Lambda
+  # zacznie na niego wskazywać.
+  depends_on = [aws_secretsmanager_secret.database]
+
   lifecycle {
     ignore_changes = [
       # Kodem zarządza CI backendu, nie Terraform.
@@ -74,9 +93,6 @@ resource "aws_lambda_function" "api" {
       s3_bucket,
       s3_key,
       s3_object_version,
-
-      # Tymczasowo tylko sekret pozostaje zarządzany poza Terraformem.
-      environment[0].variables["DB_PASSWORD"],
     ]
   }
 }
