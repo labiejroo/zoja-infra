@@ -22,15 +22,15 @@ resource "aws_lambda_function" "api" {
   role          = aws_iam_role.lambda_exec.arn
 
   runtime = var.lambda_runtime
-  handler = "index.handler"
+  handler = "dist/lambda.handler"
 
   # Terraform wymaga wskazania źródła kodu, nawet gdy go nie zarządza.
   # Ten plik jest używany WYŁĄCZNIE gdyby funkcja powstawała od zera.
   # Przy imporcie istniejącej funkcji nie zostanie użyty ani razu.
   filename = "${path.module}/placeholder/placeholder.zip"
 
-  memory_size = 128
-  timeout     = 3
+  memory_size = 256
+  timeout     = 10
 
   vpc_config {
     subnet_ids = [
@@ -82,11 +82,14 @@ resource "aws_lambda_function" "api" {
 }
 
 resource "aws_lambda_permission" "api_gateway" {
-  statement_id = "735f054c-6167-504a-871d-5ca42c09842c"
-
+  statement_id  = "AllowExecutionFromAPIGatewayApiProxy"
   action        = "lambda:InvokeFunction"
   function_name = aws_lambda_function.api.function_name
   principal     = "apigateway.amazonaws.com"
 
-  source_arn = "${aws_apigatewayv2_api.http.execution_arn}/*/*/api/hello"
+  source_arn = "${aws_apigatewayv2_api.http.execution_arn}/*/*/api/*"
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }

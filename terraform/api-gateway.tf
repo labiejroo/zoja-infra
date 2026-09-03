@@ -30,7 +30,7 @@ resource "aws_apigatewayv2_integration" "lambda" {
 # TRASA TESTOWA — istnieje dziś i podlega importowi.
 resource "aws_apigatewayv2_route" "hello" {
   api_id    = aws_apigatewayv2_api.http.id
-  route_key = "GET /api/hello"
+  route_key = "ANY /api/{proxy+}"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
