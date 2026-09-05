@@ -97,3 +97,75 @@ variable "parent_site_origin" {
   type        = string
   default     = "https://przywitajzoje.netlify.app"
 }
+
+# ---------------------------------------------------------------------------
+# WYSYŁKA MAILI (ETAP EMAIL B1)
+#
+# Wszystkie mają puste wartości domyślne i to jest celowe: infrastruktura ma
+# dać się zaplanować i utworzyć, ZANIM znamy adresy. Pusty adres nadawcy
+# oznacza po prostu, że Mail Lambda istnieje, ale nie jest gotowa do wysyłki —
+# co jest w porządku, dopóki EMAIL_ENABLED pozostaje "false".
+# ---------------------------------------------------------------------------
+
+
+variable "email_enabled" {
+  description = <<-EOT
+    Czy backend ma faktycznie wysyłać maile.
+
+    Trafia do Lambdy API jako EMAIL_ENABLED. Przy false MailDispatcherService
+    przy każdym zdarzeniu wychodzi wcześniej i nie dotyka SDK — Mail Lambda
+    nie jest wywoływana ani razu.
+
+    DEFAULT MUSI ZOSTAĆ false. Zmienna istnieje po to, żeby włączenie wysyłki
+    było świadomym terraform plan/apply z zapisem w repozytorium, a nie
+    kliknięciem w konsoli AWS, po którym nikt nie pamięta, kiedy i dlaczego.
+  EOT
+  type        = bool
+  default     = false
+}
+
+variable "ses_from_email" {
+  description = <<-EOT
+    Adres nadawcy dla SES. Puste = nie tworzymy żadnej tożsamości SES i nie
+    nadajemy Mail Lambdzie uprawnienia ses:SendEmail.
+  EOT
+  type        = string
+  default     = ""
+}
+
+variable "parent_notification_emails" {
+  description = <<-EOT
+    Skrzynki rodziców, na które idzie prośba o decyzję. Do Lambdy trafiają
+    jako jeden string rozdzielony przecinkami — zmienne środowiskowe Lambdy
+    nie mają typu listy.
+  EOT
+  type        = list(string)
+  default     = []
+}
+
+variable "ses_test_recipient_emails" {
+  description = <<-EOT
+    Adresy do zweryfikowania na czas testu w piaskownicy SES. W sandboksie SES
+    wysyła WYŁĄCZNIE na zweryfikowane adresy, więc bez tego pierwszy test
+    odbije się o MessageRejected. Pusta lista = zero tożsamości.
+  EOT
+  type        = list(string)
+  default     = []
+}
+
+variable "action_page_url" {
+  description = <<-EOT
+    Adres strony decyzyjnej wstawiany w linki w mailu. Puste = wyliczamy go
+    z domeny CloudFrontu.
+
+    BEZ FRAGMENTU. Część po # dokłada szablon maila, doklejając tam token
+    decyzji. Fragment podany tutaj zostałby zjedzony przez ten doklejony.
+  EOT
+  type        = string
+  default     = ""
+
+  validation {
+    condition     = !strcontains(var.action_page_url, "#")
+    error_message = "action_page_url nie moze zawierac fragmentu (#) - dokleja go szablon maila razem z tokenem."
+  }
+}

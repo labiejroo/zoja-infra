@@ -35,3 +35,8 @@ output "rds_port" {
   description = "Port bazy — wartość dla zmiennej DB_PORT."
   value       = aws_db_instance.postgres.port
 }
+
+output "mail_lambda_function_name" {
+  description = "Cel aws lambda update-function-code dla Mail Lambdy — ten sam artefakt ZIP, inny handler."
+  value       = aws_lambda_function.mail.function_name
+}

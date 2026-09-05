@@ -69,6 +69,29 @@ resource "aws_lambda_function" "api" {
       # wskazanego przez DB_SECRET_ID, i trzyma je wyłącznie w pamięci
       # procesu. Wpisanie go tutaj umieściłoby je w pliku stanu Terraforma,
       # czyli dokładnie tam, skąd je wyprowadziliśmy.
+
+      # --- WYSYŁKA MAILI ---
+      #
+      # WYŁĄCZNIK ZOSTAJE NA "false" PO APPLY.
+      #
+      # Cały tor mailowy wdrażamy martwy: kod jest na miejscu, funkcja istnieje,
+      # uprawnienia są nadane, a mimo to MailDispatcherService przy każdym
+      # zdarzeniu wychodzi wcześniej i nie dotyka SDK. Włączenie wysyłki to
+      # osobna, świadoma zmiana tej jednej wartości — nie skutek uboczny
+      # wdrożenia infrastruktury.
+      #
+      # Wartość bierze się ze zmiennej, której default to false — włączenie
+      # wysyłki jest wtedy zmianą w repozytorium, a nie kliknięciem w konsoli.
+      # Do włączenia potrzebne są wcześniej trzy rzeczy: zweryfikowany nadawca,
+      # Production Access w SES i decyzja o autoryzacji /api/admin/*.
+      EMAIL_ENABLED = tostring(var.email_enabled)
+
+      # Nazwa funkcji, a nie ARN — SDK przyjmuje jedną i drugą, a nazwa jest
+      # literałem znanym na etapie planu. Przy ARN-ie (nieznanym przed
+      # utworzeniem funkcji) provider oznaczyłby CAŁĄ mapę environment jako
+      # (known after apply) i plan przestałby dowodzić, co dzieje się
+      # z pozostałymi zmiennymi. Ta sama pułapka co przy DB_SECRET_ID.
+      MAIL_LAMBDA_FUNCTION_NAME = aws_lambda_function.mail.function_name
     }
   }
 
