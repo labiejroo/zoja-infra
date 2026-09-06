@@ -51,4 +51,11 @@ locals {
   # Po dołożeniu własnej domeny wystarczy ustawić zmienną — linki w mailach
   # przestawią się bez zmiany kodu.
   action_page_url = var.action_page_url != "" ? var.action_page_url : "https://${aws_cloudfront_distribution.main.domain_name}/decision"
+
+  # --- LOGOWANIE GOSPODARZY ---
+  #
+  # Nazwa sekretu, tak samo jak przy bazie, jest LITERAŁEM znanym na etapie
+  # planu. Trafia do zmiennej środowiskowej Lambdy, a ARN (z losowym sufiksem)
+  # degradowałby całą mapę environment do (known after apply).
+  admin_auth_secret_name = "${var.project}/admin-auth"
 }

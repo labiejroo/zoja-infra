@@ -92,6 +92,22 @@ resource "aws_lambda_function" "api" {
       # (known after apply) i plan przestałby dowodzić, co dzieje się
       # z pozostałymi zmiennymi. Ta sama pułapka co przy DB_SECRET_ID.
       MAIL_LAMBDA_FUNCTION_NAME = aws_lambda_function.mail.function_name
+
+      # --- LOGOWANIE GOSPODARZY ---
+      #
+      # Nazwa sekretu, nie ARN — z tego samego powodu co przy DB_SECRET_ID:
+      # ARN ma losowy sufiks, więc jest nieznany przed utworzeniem, a jedna
+      # nieznana wartość degraduje CAŁĄ mapę environment do (known after
+      # apply). GetSecretValue przyjmuje nazwę równie dobrze jak ARN.
+      #
+      # W sekrecie leży hash hasła i klucz podpisu sesji. Ani jedno, ani drugie
+      # nie ma prawa znaleźć się tutaj: zmienne środowiskowe Lambdy widzi każdy
+      # z lambda:GetFunctionConfiguration i wsiąkają do pliku stanu Terraforma.
+      ADMIN_AUTH_SECRET_ID = local.admin_auth_secret_name
+
+      # Doba. Dłużej niż jedno posiedzenie przy kalendarzu, krócej niż
+      # zapomniana otwarta karta na cudzym laptopie.
+      ADMIN_SESSION_TTL_SECONDS = "86400"
     }
   }
 
@@ -106,7 +122,10 @@ resource "aws_lambda_function" "api" {
   # Nazwa sekretu jest literałem, więc Terraform nie wywnioskuje tej
   # zależności sam. Deklarujemy ją jawnie: sekret ma istnieć, zanim Lambda
   # zacznie na niego wskazywać.
-  depends_on = [aws_secretsmanager_secret.database]
+  depends_on = [
+    aws_secretsmanager_secret.database,
+    aws_secretsmanager_secret.admin_auth,
+  ]
 
   lifecycle {
     ignore_changes = [
