@@ -58,4 +58,21 @@ locals {
   # planu. Trafia do zmiennej środowiskowej Lambdy, a ARN (z losowym sufiksem)
   # degradowałby całą mapę environment do (known after apply).
   admin_auth_secret_name = "${var.project}/admin-auth"
+
+  # --- WERYFIKACJA TURNSTILE ---
+
+  turnstile_lambda_function_name = "${var.project}-turnstile-lambda"
+  turnstile_log_group_name       = "/aws/lambda/${var.project}-turnstile-lambda"
+
+  # Nazwa sekretu, nie ARN — ta sama zasada co przy bazie i logowaniu:
+  # ARN ma losowy sufiks, więc jest nieznany przed utworzeniem, a jedna
+  # nieznana wartość degraduje całą mapę environment do (known after apply).
+  turnstile_secret_name = "${var.project}/turnstile"
+
+  # Host, który Cloudflare zobaczy przy rozwiązywaniu wyzwania.
+  #
+  # To domena CLOUDFRONTU, nie strony rodzinnej na Netlify. Formularz bywa
+  # osadzony w iframe, ale dokument z widgetem pochodzi stąd — i to ten adres
+  # Cloudflare wpisuje w pole hostname odpowiedzi Siteverify.
+  turnstile_expected_hostname = aws_cloudfront_distribution.main.domain_name
 }

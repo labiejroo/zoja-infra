@@ -169,3 +169,22 @@ variable "action_page_url" {
     error_message = "action_page_url nie moze zawierac fragmentu (#) - dokleja go szablon maila razem z tokenem."
   }
 }
+
+variable "turnstile_enabled" {
+  description = <<-EOT
+    Czy publiczny formularz ma wymagać rozwiązanego wyzwania Turnstile.
+
+    Trafia do Lambdy API jako TURNSTILE_ENABLED. Przy false TurnstileService
+    przy każdym żądaniu wychodzi wcześniej i weryfikator nie jest wywoływany
+    ani razu — formularz działa dokładnie jak przed tym etapem.
+
+    DEFAULT MUSI ZOSTAĆ false. Włączenie wymaga wcześniej widgetu w Cloudflare,
+    klucza prywatnego w zoja/turnstile i frontendu z sitekey na produkcji.
+    Odwrotna kolejność zablokowałaby formularz wszystkim gościom.
+
+    Zmienna zostaje na stałe także po wdrożeniu: jest wyłącznikiem awaryjnym
+    na wypadek dłuższej awarii Cloudflare.
+  EOT
+  type        = bool
+  default     = false
+}

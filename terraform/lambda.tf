@@ -108,6 +108,24 @@ resource "aws_lambda_function" "api" {
       # Doba. Dłużej niż jedno posiedzenie przy kalendarzu, krócej niż
       # zapomniana otwarta karta na cudzym laptopie.
       ADMIN_SESSION_TTL_SECONDS = "86400"
+
+      # --- WERYFIKACJA CAPTCHY ---
+      #
+      # WYŁĄCZNIK ZOSTAJE NA "false" PO PIERWSZYM APPLY.
+      #
+      # Cały tor Turnstile wdrażamy martwy: weryfikator istnieje, uprawnienia
+      # są nadane, a mimo to TurnstileService przy każdym żądaniu wychodzi
+      # wcześniej i nie dotyka SDK. Publiczny formularz działa jak dotąd.
+      #
+      # Włączenie jest OSOBNĄ zmianą i wymaga wcześniej trzech rzeczy: widgetu
+      # w Cloudflare, klucza prywatnego w zoja/turnstile i frontendu z sitekey
+      # na produkcji. Odwrotna kolejność zablokowałaby formularz wszystkim.
+      TURNSTILE_ENABLED = tostring(var.turnstile_enabled)
+
+      # Nazwa funkcji, nie ARN — ta sama pułapka co przy DB_SECRET_ID
+      # i MAIL_LAMBDA_FUNCTION_NAME: ARN jest nieznany przed utworzeniem,
+      # a jedna nieznana wartość degraduje całą mapę do (known after apply).
+      TURNSTILE_LAMBDA_FUNCTION_NAME = aws_lambda_function.turnstile.function_name
     }
   }
 
@@ -125,6 +143,7 @@ resource "aws_lambda_function" "api" {
   depends_on = [
     aws_secretsmanager_secret.database,
     aws_secretsmanager_secret.admin_auth,
+    aws_secretsmanager_secret.turnstile,
   ]
 
   lifecycle {
